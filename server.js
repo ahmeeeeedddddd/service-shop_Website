@@ -35,7 +35,11 @@ if (fs.existsSync(dataFile)) {
 }
 
 const saveRepairs = () => {
-    fs.writeFileSync(dataFile, JSON.stringify(repairs, null, 2));
+    try {
+        fs.writeFileSync(dataFile, JSON.stringify(repairs, null, 2));
+    } catch (e) {
+        console.error('Error writing data.json (Vercel read-only FS):', e.message);
+    }
 };
 
 // Middleware
@@ -81,7 +85,11 @@ if (fs.existsSync(reviewsFile)) {
 }
 
 const saveReviews = () => {
-    fs.writeFileSync(reviewsFile, JSON.stringify(reviews, null, 2));
+    try {
+        fs.writeFileSync(reviewsFile, JSON.stringify(reviews, null, 2));
+    } catch (e) {
+        console.error('Error writing reviews.json (Vercel read-only FS):', e.message);
+    }
 };
 
 // API Endpoints
@@ -145,6 +153,10 @@ app.delete('/api/reviews/:id', (req, res) => {
     res.json({ message: 'Review deleted successfully' });
 });
 
-app.listen(port, () => {
-    console.log(`Server running at http://localhost:${port}`);
-});
+if (require.main === module) {
+    app.listen(port, () => {
+        console.log(`Server running at http://localhost:${port}`);
+    });
+}
+
+module.exports = app;
