@@ -1,10 +1,24 @@
+require('dotenv').config();
 const express = require('express');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const { createClient } = require('@supabase/supabase-js');
 
 const app = express();
-const port = 3000;
+const port = process.env.PORT || 3000;
+
+const SUPABASE_URL = process.env.SUPABASE_URL || 'https://nymfezqpvljlktakaodp.supabase.co';
+const SUPABASE_KEY = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_KEY;
+
+let supabase = null;
+if (SUPABASE_URL && SUPABASE_KEY) {
+    try {
+        supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+    } catch (e) {
+        console.error('Failed to init Supabase:', e.message);
+    }
+}
 
 // Set up storage for uploaded files
 const storage = multer.diskStorage({
@@ -22,7 +36,7 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage: storage });
 
-// Mock database to store repair items
+// Local database fallbacks
 const dataFile = path.join(__dirname, 'data.json');
 let repairs = [];
 
@@ -38,7 +52,7 @@ const saveRepairs = () => {
     try {
         fs.writeFileSync(dataFile, JSON.stringify(repairs, null, 2));
     } catch (e) {
-        console.error('Error writing data.json (Vercel read-only FS):', e.message);
+        console.error('Error writing data.json:', e.message);
     }
 };
 
@@ -58,7 +72,7 @@ app.get('/ansaryadminnn', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'admin.html'));
 });
 
-// Reviews storage
+// Local Reviews fallback storage
 const reviewsFile = path.join(__dirname, 'reviews.json');
 let reviews = [
     {
@@ -91,27 +105,71 @@ const saveReviews = () => {
     try {
         fs.writeFileSync(reviewsFile, JSON.stringify(reviews, null, 2));
     } catch (e) {
-        console.error('Error writing reviews.json (Vercel read-only FS):', e.message);
+        console.error('Error writing reviews.json:', e.message);
     }
 };
 
-// API Endpoints
-app.get('/api/repairs', (req, res) => {
+// API Endpoints: Repairs
+app.get('/api/repairs', async (req, res) => {
+    if (supabase) {
+        try {
+            const { data, error } = await supabase.from('repairs').select('*').order('created_at', { ascending: false });
+            if (!error && data && data.length > 0) {
+                return res.json(data);
+            }
+        } catch (e) {
+            console.error('Supabase fetch repairs error:', e.message);
+        }
+    }
     res.json(repairs);
 });
 
-app.post('/api/repairs', upload.single('media'), (req, res) => {
+app.post('/api/repairs', upload.single('media'), async (req, res) => {
     if (!req.file) {
         return res.status(400).json({ error: 'No file uploaded' });
+    }
+
+    let mediaPath = '/uploads/' + req.file.filename;
+
+    // Try Supabase Storage Upload
+    if (supabase) {
+        try {
+            const fileBuffer = fs.readFileSync(req.file.path);
+            const fileName = `${Date.now()}_${req.file.originalname.replace(/[^a-zA-Z0-9._-]/g, '')}`;
+            
+            const { data: uploadData, error: uploadErr } = await supabase.storage
+                .from('uploads')
+                .upload(fileName, fileBuffer, {
+                    contentType: req.file.mimetype,
+                    upsert: true
+                });
+
+            if (!uploadErr && uploadData) {
+                const { data: publicUrlData } = supabase.storage.from('uploads').getPublicUrl(fileName);
+                if (publicUrlData && publicUrlData.publicUrl) {
+                    mediaPath = publicUrlData.publicUrl;
+                }
+            }
+        } catch (e) {
+            console.error('Supabase storage upload exception:', e.message);
+        }
     }
 
     const newRepair = {
         id: Date.now().toString(),
         title: req.body.title ? req.body.title.trim() : '',
         description: req.body.description ? req.body.description.trim() : '',
-        mediaPath: '/uploads/' + req.file.filename,
+        mediaPath: mediaPath,
         mediaType: req.file.mimetype.startsWith('video') ? 'video' : 'image'
     };
+
+    if (supabase) {
+        try {
+            await supabase.from('repairs').insert([newRepair]);
+        } catch (e) {
+            console.error('Supabase repair insert error:', e.message);
+        }
+    }
 
     repairs.push(newRepair);
     saveRepairs();
@@ -119,12 +177,22 @@ app.post('/api/repairs', upload.single('media'), (req, res) => {
     res.json({ message: 'Upload successful', repair: newRepair });
 });
 
-// Review Endpoints
-app.get('/api/reviews', (req, res) => {
+// API Endpoints: Reviews
+app.get('/api/reviews', async (req, res) => {
+    if (supabase) {
+        try {
+            const { data, error } = await supabase.from('reviews').select('*').order('created_at', { ascending: false });
+            if (!error && data && data.length > 0) {
+                return res.json(data);
+            }
+        } catch (e) {
+            console.error('Supabase fetch reviews error:', e.message);
+        }
+    }
     res.json(reviews);
 });
 
-app.post('/api/reviews', (req, res) => {
+app.post('/api/reviews', async (req, res) => {
     const { name, comment } = req.body;
     if (!name || !comment) {
         return res.status(400).json({ error: 'الاسم والرأي مطلوبان' });
@@ -137,21 +205,33 @@ app.post('/api/reviews', (req, res) => {
         date: new Date().toISOString().split('T')[0]
     };
 
+    if (supabase) {
+        try {
+            await supabase.from('reviews').insert([newReview]);
+        } catch (e) {
+            console.error('Supabase review insert error:', e.message);
+        }
+    }
+
     reviews.unshift(newReview);
     saveReviews();
 
     res.json({ message: 'Review added', review: newReview });
 });
 
-app.delete('/api/reviews/:id', (req, res) => {
+app.delete('/api/reviews/:id', async (req, res) => {
     const { id } = req.params;
-    const initialLength = reviews.length;
-    reviews = reviews.filter(r => r.id !== id);
     
-    if (reviews.length === initialLength) {
-        return res.status(404).json({ error: 'Review not found' });
+    if (supabase) {
+        try {
+            await supabase.from('reviews').delete().eq('id', id);
+        } catch (e) {
+            console.error('Supabase delete review error:', e.message);
+        }
     }
 
+    const initialLength = reviews.length;
+    reviews = reviews.filter(r => r.id !== id);
     saveReviews();
     res.json({ message: 'Review deleted successfully' });
 });
