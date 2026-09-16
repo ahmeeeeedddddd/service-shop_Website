@@ -281,10 +281,12 @@ function setupReviewModal() {
 
 document.addEventListener('DOMContentLoaded', () => {
     updateLanguage(currentLang);
-    fetchRepairs();
-    fetchReviews();
     setupReviewForm();
     setupReviewModal();
     initScrollAnimations();
+    
+    // Fetch API data without blocking UI listeners
+    fetchRepairs().catch(e => console.error('Repairs error:', e));
+    fetchReviews().catch(e => console.error('Reviews error:', e));
 });
 

@@ -8,6 +8,7 @@ const { createClient } = require('@supabase/supabase-js');
 const app = express();
 const port = process.env.PORT || 3000;
 
+// Supabase Setup
 const SUPABASE_URL = process.env.SUPABASE_URL || 'https://nymfezqpvljlktakaodp.supabase.co';
 const SUPABASE_KEY = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_KEY;
 
@@ -20,21 +21,11 @@ if (SUPABASE_URL && SUPABASE_KEY) {
     }
 }
 
-// Set up storage for uploaded files
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        const uploadDir = path.join(__dirname, 'public', 'uploads');
-        if (!fs.existsSync(uploadDir)) {
-            fs.mkdirSync(uploadDir, { recursive: true });
-        }
-        cb(null, uploadDir);
-    },
-    filename: (req, file, cb) => {
-        cb(null, Date.now() + path.extname(file.originalname));
-    }
+// Memory storage for Multer (Vercel & Supabase compatible)
+const upload = multer({ 
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 50 * 1024 * 1024 } // 50MB limit
 });
-
-const upload = multer({ storage: storage });
 
 // Local database fallbacks
 const dataFile = path.join(__dirname, 'data.json');
@@ -67,7 +58,6 @@ app.get('/', (req, res) => {
 app.get('/repairs', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'all-repairs.html'));
 });
-
 app.get('/ansaryadminnn', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'admin.html'));
 });
@@ -113,7 +103,7 @@ const saveReviews = () => {
 app.get('/api/repairs', async (req, res) => {
     if (supabase) {
         try {
-            const { data, error } = await supabase.from('repairs').select('*').order('created_at', { ascending: false });
+            const { data, error } = await supabase.from('repairs').select('*');
             if (!error && data && data.length > 0) {
                 return res.json(data);
             }
@@ -126,20 +116,18 @@ app.get('/api/repairs', async (req, res) => {
 
 app.post('/api/repairs', upload.single('media'), async (req, res) => {
     if (!req.file) {
-        return res.status(400).json({ error: 'No file uploaded' });
+        return res.status(400).json({ error: 'لم يتم اختيار ملف' });
     }
 
-    let mediaPath = '/uploads/' + req.file.filename;
+    const fileName = `${Date.now()}_${req.file.originalname.replace(/[^a-zA-Z0-9._-]/g, '')}`;
+    let mediaPath = '';
 
-    // Try Supabase Storage Upload
+    // Upload file to Supabase Storage
     if (supabase) {
         try {
-            const fileBuffer = fs.readFileSync(req.file.path);
-            const fileName = `${Date.now()}_${req.file.originalname.replace(/[^a-zA-Z0-9._-]/g, '')}`;
-            
             const { data: uploadData, error: uploadErr } = await supabase.storage
                 .from('uploads')
-                .upload(fileName, fileBuffer, {
+                .upload(fileName, req.file.buffer, {
                     contentType: req.file.mimetype,
                     upsert: true
                 });
@@ -149,9 +137,26 @@ app.post('/api/repairs', upload.single('media'), async (req, res) => {
                 if (publicUrlData && publicUrlData.publicUrl) {
                     mediaPath = publicUrlData.publicUrl;
                 }
+            } else if (uploadErr) {
+                console.error('Supabase upload error:', uploadErr.message);
             }
         } catch (e) {
-            console.error('Supabase storage upload exception:', e.message);
+            console.error('Supabase upload exception:', e.message);
+        }
+    }
+
+    // Local file fallback
+    if (!mediaPath) {
+        try {
+            const uploadDir = path.join(__dirname, 'public', 'uploads');
+            if (!fs.existsSync(uploadDir)) {
+                fs.mkdirSync(uploadDir, { recursive: true });
+            }
+            fs.writeFileSync(path.join(uploadDir, fileName), req.file.buffer);
+            mediaPath = '/uploads/' + fileName;
+        } catch (e) {
+            console.error('Local upload save error:', e.message);
+            mediaPath = '/uploads/' + fileName;
         }
     }
 
@@ -165,7 +170,8 @@ app.post('/api/repairs', upload.single('media'), async (req, res) => {
 
     if (supabase) {
         try {
-            await supabase.from('repairs').insert([newRepair]);
+            const { error: dbErr } = await supabase.from('repairs').insert([newRepair]);
+            if (dbErr) console.error('Supabase repair db error:', dbErr.message);
         } catch (e) {
             console.error('Supabase repair insert error:', e.message);
         }
@@ -181,7 +187,7 @@ app.post('/api/repairs', upload.single('media'), async (req, res) => {
 app.get('/api/reviews', async (req, res) => {
     if (supabase) {
         try {
-            const { data, error } = await supabase.from('reviews').select('*').order('created_at', { ascending: false });
+            const { data, error } = await supabase.from('reviews').select('*');
             if (!error && data && data.length > 0) {
                 return res.json(data);
             }
@@ -207,9 +213,10 @@ app.post('/api/reviews', async (req, res) => {
 
     if (supabase) {
         try {
-            await supabase.from('reviews').insert([newReview]);
+            const { error: insErr } = await supabase.from('reviews').insert([newReview]);
+            if (insErr) console.error('Supabase review insert error:', insErr.message);
         } catch (e) {
-            console.error('Supabase review insert error:', e.message);
+            console.error('Supabase review insert exception:', e.message);
         }
     }
 
