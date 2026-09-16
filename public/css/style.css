@@ -922,3 +922,76 @@ body.rtl .repair-media-container::after {
     transform: rotate(90deg);
 }
 
+/* --- Responsive Media Queries (Mobile & Tablet) --- */
+@media (max-width: 768px) {
+    .header-inner {
+        flex-direction: column;
+        gap: 15px;
+        padding: 10px 0;
+    }
+    
+    .logo img {
+        height: 75px;
+    }
+    
+    .nav-links {
+        gap: 12px 18px;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    .nav-links li a {
+        font-size: 0.95rem;
+    }
+
+    .header-contact {
+        flex-direction: row;
+        gap: 15px;
+        justify-content: center;
+    }
+
+    .hero-content {
+        padding: 35px 20px;
+        margin: 0 10px;
+    }
+
+    .hero-content h1 {
+        font-size: 1.75rem;
+        line-height: 1.3;
+    }
+
+    .hero-decor.gear1 {
+        width: 300px; height: 300px;
+        top: -80px; right: -50px;
+    }
+    .hero-decor.wrench1 {
+        width: 250px; height: 250px;
+        bottom: -50px; left: -50px;
+    }
+
+    .visa-container {
+        flex-direction: column;
+        text-align: center;
+        gap: 25px;
+    }
+
+    .visa-text h2 {
+        font-size: 1.75rem;
+    }
+
+    .services-grid, .repairs-grid, .reviews-grid {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+
+    .section-title h2 {
+        font-size: 1.8rem;
+    }
+
+    .review-modal-content {
+        padding: 30px 20px;
+        max-width: 90%;
+    }
+}
+
+
