@@ -208,13 +208,13 @@ body.ltr .phone-numbers { align-items: flex-end; }
     z-index: 1;
     text-align: center;
     max-width: 800px;
-    background: rgba(20, 20, 20, 0.92);
-    color: #ffffff;
+    background: rgba(255, 255, 255, 0.95);
+    color: var(--text-main);
     padding: 60px 40px;
     border-radius: 20px;
-    box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+    box-shadow: 0 15px 40px rgba(0,0,0,0.12);
     backdrop-filter: blur(10px);
-    border: 2px solid var(--primary-yellow);
+    border: 1px solid rgba(0,0,0,0.06);
 }
 
 /* Decorative SVGs in Hero */
@@ -248,7 +248,7 @@ body.ltr .phone-numbers { align-items: flex-end; }
     font-size: 3rem;
     color: var(--primary-yellow); /* Plain yellow hero title */
     margin-bottom: 20px;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 0 1px rgba(0, 0, 0, 0.5);
 }
 
 .btn-primary {
