@@ -78,13 +78,9 @@ p {
 
 /* Animations */
 .animate-on-scroll {
-    opacity: 0;
-    transform: translateY(30px);
-    transition: opacity 0.8s ease, transform 0.8s cubic-bezier(0.25, 0.8, 0.25, 1);
-}
-.animate-on-scroll.is-visible {
     opacity: 1;
     transform: translateY(0);
+    transition: opacity 0.6s ease, transform 0.6s ease;
 }
 
 /* --- Header (Light Glassmorphism) --- */
@@ -212,11 +208,13 @@ body.ltr .phone-numbers { align-items: flex-end; }
     z-index: 1;
     text-align: center;
     max-width: 800px;
-    background: rgba(255,255,255,0.85);
+    background: rgba(20, 20, 20, 0.92);
+    color: #ffffff;
     padding: 60px 40px;
     border-radius: 20px;
-    box-shadow: var(--shadow-soft);
+    box-shadow: 0 20px 50px rgba(0,0,0,0.3);
     backdrop-filter: blur(10px);
+    border: 2px solid var(--primary-yellow);
 }
 
 /* Decorative SVGs in Hero */
