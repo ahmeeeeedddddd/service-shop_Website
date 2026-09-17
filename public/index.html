@@ -148,7 +148,7 @@
             </div>
 
             <div class="animate-on-scroll" style="text-align: center; margin-top: 35px;">
-                <button id="openReviewModalBtn" class="btn-primary" style="background: var(--bg-dark-accent); color: white;">أضف رأيك هنا</button>
+                <button id="openReviewModalBtn" type="button" onclick="document.getElementById('reviewModal').classList.add('active')" class="btn-primary" style="background: var(--bg-dark-accent); color: white;">أضف رأيك هنا</button>
             </div>
         </div>
     </section>
@@ -156,7 +156,7 @@
     <!-- Review Popup Modal -->
     <div id="reviewModal" class="review-modal">
         <div class="review-modal-content">
-            <button class="review-modal-close" id="closeReviewModalBtn">&times;</button>
+            <button class="review-modal-close" id="closeReviewModalBtn" type="button" onclick="document.getElementById('reviewModal').classList.remove('active')">&times;</button>
             <h3 id="addReviewTitle" style="text-align: center; margin-bottom: 25px; color: var(--text-main);">شاركنا رأيك وتجربتك</h3>
             <form id="reviewForm">
                 <div class="review-form-group">
@@ -190,7 +190,7 @@
                     <p style="color: white; font-weight: bold; font-size: 1.2rem;">&#128222; 01010606016</p>
                 </div>
                 <div class="footer-col map-container">
-                    <iframe src="https://maps.google.com/maps?q=Nasr%20City%2C%20Cairo%2C%20Egypt&t=&z=14&ie=UTF8&iwloc=&output=embed" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade" style="border:0; width: 100%; height: 250px; border-radius: 15px;"></iframe>
+                    <iframe src="https://maps.google.com/maps?q=%D9%85%D8%B1%D9%83%D8%B2%20%D8%A7%D9%84%D8%A7%D9%8BD%D8%B5%D8%A7%D8%B1%D9%8A%20%D9%84%D8%B5%D9%8A%D8%A7%D9%86%D8%A9%20%D8%A7%D9%84%D8%B3%D9%8A%D8%A7%D8%B1%D8%A7%D8%AA%20An%20Nadi%20Al%20Ahli%2C%20Nasr%20City%2C%20Cairo&t=&z=16&ie=UTF8&iwloc=&output=embed" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade" style="border:0; width: 100%; height: 250px; border-radius: 15px;"></iframe>
                 </div>
             </div>
             <div class="footer-bottom">
