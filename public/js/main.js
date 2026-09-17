@@ -16,7 +16,7 @@ const elementsToTranslate = [
 function updateLanguage(lang) {
     currentLang = lang;
     const body = document.body;
-    
+
     if (lang === 'ar') {
         body.classList.remove('ltr');
         body.classList.add('rtl');
@@ -27,8 +27,8 @@ function updateLanguage(lang) {
 
     elementsToTranslate.forEach(id => {
         const el = document.getElementById(id);
-        if (el && translations[lang][id]) {
-            el.innerHTML = translations[lang][id]; // using innerHTML to allow tags if needed
+        if (el && translations[lang] && translations[lang][id]) {
+            el.innerHTML = translations[lang][id];
         }
     });
 }
@@ -40,14 +40,14 @@ function toggleLanguage() {
 
 window.toggleLanguage = toggleLanguage;
 
-// Intersection Observer for scroll animations
+// Scroll animations
 function initScrollAnimations() {
     document.querySelectorAll('.animate-on-scroll').forEach(el => {
         el.classList.add('is-visible');
     });
 }
 
-// Lightbox Modal Implementation
+// ─── Lightbox ────────────────────────────────────────────────────────────────
 function setupLightbox() {
     if (document.getElementById('lightbox-modal')) return;
 
@@ -66,18 +66,13 @@ function setupLightbox() {
     const closeBtn = document.getElementById('lightboxClose');
     const closeModal = () => {
         modal.classList.remove('active');
-        const mediaWrapper = document.getElementById('lightboxMediaWrapper');
-        if (mediaWrapper) mediaWrapper.innerHTML = '';
+        const mw = document.getElementById('lightboxMediaWrapper');
+        if (mw) mw.innerHTML = '';
     };
 
     closeBtn.addEventListener('click', closeModal);
-    modal.addEventListener('click', (e) => {
-        if (e.target === modal) closeModal();
-    });
-
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') closeModal();
-    });
+    modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
 }
 
 function openLightbox(mediaPath, mediaType, title = '', description = '') {
@@ -87,109 +82,118 @@ function openLightbox(mediaPath, mediaType, title = '', description = '') {
     const caption = document.getElementById('lightboxCaption');
 
     if (mediaType === 'video') {
-        wrapper.innerHTML = `<video src="${mediaPath}" controls autoplay style="max-width:90vw; max-height:75vh;"></video>`;
+        wrapper.innerHTML = `<video src="${mediaPath}" controls autoplay style="max-width:90vw;max-height:75vh;"></video>`;
     } else {
-        wrapper.innerHTML = `<img src="${mediaPath}" alt="${title || 'Repair'}" style="max-width:90vw; max-height:75vh;">`;
+        wrapper.innerHTML = `<img src="${mediaPath}" alt="${title || 'Repair'}" style="max-width:90vw;max-height:75vh;">`;
     }
 
-    let captionText = '';
-    if (title) captionText += `<div>${title}</div>`;
-    if (description) captionText += `<div style="font-weight: normal; font-size: 0.95rem; margin-top: 5px; opacity: 0.85;">${description}</div>`;
-    caption.innerHTML = captionText;
+    let cap = '';
+    if (title) cap += `<div>${title}</div>`;
+    if (description) cap += `<div style="font-weight:normal;font-size:.95rem;margin-top:5px;opacity:.85;">${description}</div>`;
+    caption.innerHTML = cap;
 
     modal.classList.add('active');
 }
 
-// Fetch and render repairs
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+function escapeHtml(str) {
+    if (!str) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
+// ─── Repairs ─────────────────────────────────────────────────────────────────
 async function fetchRepairs() {
+    const container = document.getElementById('repairs-container');
+    if (!container) return;
+
     try {
         const response = await fetch('/api/repairs');
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const repairs = await response.json();
-        const container = document.getElementById('repairs-container');
-        
-        if (!container) return;
-        
+
         container.innerHTML = '';
-        
-        const limit = container.dataset.limit ? parseInt(container.dataset.limit) : null;
-        let repairsToRender = repairs;
-        if (limit && repairs.length > limit) {
-            repairsToRender = repairs.slice(0, limit);
+
+        if (!Array.isArray(repairs) || repairs.length === 0) {
+            container.innerHTML = '<p style="text-align:center;color:#999;grid-column:1/-1;">لا توجد إصلاحات بعد</p>';
+            return;
         }
-        
+
+        const limit = container.dataset.limit ? parseInt(container.dataset.limit) : null;
+        const repairsToRender = (limit && repairs.length > limit) ? repairs.slice(0, limit) : repairs;
+
         repairsToRender.forEach((repair, index) => {
+            // Normalize column names (Supabase may use snake_case)
+            const mediaPath = repair.mediaPath || repair.media_path || repair.mediapath || '';
+            const mediaType = repair.mediaType || repair.media_type || repair.mediatype || 'image';
+            const title = repair.title || '';
+            const description = repair.description || '';
+
             const card = document.createElement('div');
             card.className = 'repair-card animate-on-scroll';
             card.style.transitionDelay = `${index * 0.1}s`;
-            
-            let mediaHtml = '';
-            if (repair.mediaType === 'video') {
-                mediaHtml = `<video class="repair-media" src="${repair.mediaPath}"></video>`;
-            } else {
-                mediaHtml = `<img class="repair-media" src="${repair.mediaPath}" alt="${repair.title || 'Repair image'}">`;
-            }
-            
-            let infoHtml = '';
-            if (repair.title || repair.description) {
-                infoHtml = `
-                    <div class="repair-info">
-                        ${repair.title ? `<h4>${repair.title}</h4>` : ''}
-                        ${repair.description ? `<p>${repair.description}</p>` : ''}
-                    </div>
-                `;
-            }
+
+            const mediaHtml = mediaType === 'video'
+                ? `<video class="repair-media" src="${mediaPath}" muted playsinline></video>`
+                : `<img class="repair-media" src="${mediaPath}" alt="${escapeHtml(title) || 'Repair image'}" loading="lazy">`;
+
+            const infoHtml = (title || description) ? `
+                <div class="repair-info">
+                    ${title ? `<h4>${escapeHtml(title)}</h4>` : ''}
+                    ${description ? `<p>${escapeHtml(description)}</p>` : ''}
+                </div>` : '';
 
             card.innerHTML = `
-                <div class="repair-media-container">
-                    ${mediaHtml}
-                </div>
+                <div class="repair-media-container">${mediaHtml}</div>
                 ${infoHtml}
             `;
 
-            // Click event to launch Lightbox
-            card.addEventListener('click', () => {
-                openLightbox(repair.mediaPath, repair.mediaType, repair.title, repair.description);
-            });
-
+            card.addEventListener('click', () => openLightbox(mediaPath, mediaType, title, description));
             container.appendChild(card);
         });
 
-        // Re-init observer for dynamically added elements
         initScrollAnimations();
 
     } catch (error) {
         console.error('Error fetching repairs:', error);
+        if (container) container.innerHTML = '<p style="text-align:center;color:#999;grid-column:1/-1;">تعذر تحميل الإصلاحات</p>';
     }
 }
 
-function escapeHtml(str) {
-    if (!str) return '';
-    return String(str)
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
-}
-
-// Fetch and render reviews
+// ─── Reviews ──────────────────────────────────────────────────────────────────
 async function fetchReviews() {
+    const container = document.getElementById('reviewsGrid');
+    if (!container) return;
+
     try {
         const response = await fetch('/api/reviews');
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const reviews = await response.json();
-        const container = document.getElementById('reviewsGrid');
-        if (!container) return;
 
         container.innerHTML = '';
 
+        if (!Array.isArray(reviews) || reviews.length === 0) {
+            container.innerHTML = '<p style="text-align:center;grid-column:1/-1;color:#555;">كن أول من يشارك رأيه!</p>';
+            return;
+        }
+
         reviews.forEach(review => {
+            // Normalize column names (Supabase may use snake_case or different casing)
+            const name = review.name || '';
+            const comment = review.comment || '';
+            const date = review.date || (review.created_at ? review.created_at.split('T')[0] : '');
+
             const card = document.createElement('div');
             card.className = 'testimonial animate-on-scroll';
             card.innerHTML = `
-                <p dir="auto">"${escapeHtml(review.comment)}"</p>
+                <p dir="auto">"${escapeHtml(comment)}"</p>
                 <div class="review-author">
-                    <span class="review-name" dir="auto"><bdi>- ${escapeHtml(review.name)}</bdi></span>
-                    ${review.date ? `<span class="review-date" dir="auto"><bdi>${escapeHtml(review.date)}</bdi></span>` : ''}
+                    <span class="review-name"><bdi>- ${escapeHtml(name)}</bdi></span>
+                    ${date ? `<span class="review-date">${escapeHtml(date)}</span>` : ''}
                 </div>
             `;
             container.appendChild(card);
@@ -198,10 +202,11 @@ async function fetchReviews() {
         initScrollAnimations();
     } catch (err) {
         console.error('Error fetching reviews:', err);
+        if (container) container.innerHTML = '<p style="text-align:center;grid-column:1/-1;color:#555;">تعذر تحميل الآراء</p>';
     }
 }
 
-// Setup Review Form submission
+// ─── Review Form ──────────────────────────────────────────────────────────────
 function setupReviewForm() {
     const form = document.getElementById('reviewForm');
     const statusMsg = document.getElementById('reviewStatusMessage');
@@ -210,13 +215,16 @@ function setupReviewForm() {
 
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
+        e.stopPropagation();
+
         const name = document.getElementById('reviewName').value.trim();
         const comment = document.getElementById('reviewComment').value.trim();
-
         if (!name || !comment) return;
 
-        statusMsg.textContent = currentLang === 'ar' ? 'جاري إرسال رأيك...' : 'Submitting your review...';
-        statusMsg.style.color = 'var(--primary-yellow)';
+        if (statusMsg) {
+            statusMsg.textContent = currentLang === 'ar' ? 'جاري إرسال رأيك...' : 'Submitting your review...';
+            statusMsg.style.color = 'var(--primary-yellow)';
+        }
 
         try {
             const res = await fetch('/api/reviews', {
@@ -226,67 +234,71 @@ function setupReviewForm() {
             });
 
             if (res.ok) {
-                statusMsg.textContent = currentLang === 'ar' ? 'شكراً لك! تم إضافة رأيك بنجاح.' : 'Thank you! Your review has been added.';
-                statusMsg.style.color = '#2e7d32';
+                if (statusMsg) {
+                    statusMsg.textContent = currentLang === 'ar' ? 'شكراً لك! تم إضافة رأيك بنجاح.' : 'Thank you! Your review has been added.';
+                    statusMsg.style.color = '#2e7d32';
+                }
                 form.reset();
-                fetchReviews(); // Refresh review list
+                fetchReviews();
                 setTimeout(() => {
                     if (modal) modal.classList.remove('active');
-                    statusMsg.textContent = '';
+                    if (statusMsg) statusMsg.textContent = '';
                 }, 1500);
             } else {
-                const data = await res.json();
-                statusMsg.textContent = data.error || (currentLang === 'ar' ? 'حدث خطأ' : 'An error occurred');
-                statusMsg.style.color = 'var(--primary-red)';
+                const data = await res.json().catch(() => ({}));
+                if (statusMsg) {
+                    statusMsg.textContent = data.error || (currentLang === 'ar' ? 'حدث خطأ' : 'An error occurred');
+                    statusMsg.style.color = 'var(--primary-red)';
+                }
             }
         } catch (err) {
-            statusMsg.textContent = currentLang === 'ar' ? 'حدث خطأ في الاتصال' : 'Connection error';
-            statusMsg.style.color = 'var(--primary-red)';
+            console.error('Review submit error:', err);
+            if (statusMsg) {
+                statusMsg.textContent = currentLang === 'ar' ? 'حدث خطأ في الاتصال' : 'Connection error';
+                statusMsg.style.color = 'var(--primary-red)';
+            }
         }
     });
 }
 
-// Setup Modal open/close actions
+// ─── Review Modal ─────────────────────────────────────────────────────────────
 function setupReviewModal() {
     const openBtn = document.getElementById('openReviewModalBtn');
     const modal = document.getElementById('reviewModal');
     const closeBtn = document.getElementById('closeReviewModalBtn');
     const statusMsg = document.getElementById('reviewStatusMessage');
 
-    if (!openBtn || !modal) return;
+    if (!modal) return;
 
-    openBtn.addEventListener('click', () => {
-        modal.classList.add('active');
-        if (statusMsg) statusMsg.textContent = '';
-    });
-
-    if (closeBtn) {
-        closeBtn.addEventListener('click', () => {
-            modal.classList.remove('active');
+    if (openBtn) {
+        openBtn.addEventListener('click', () => {
+            modal.classList.add('active');
+            if (statusMsg) statusMsg.textContent = '';
         });
     }
 
-    modal.addEventListener('click', (e) => {
-        if (e.target === modal) {
-            modal.classList.remove('active');
-        }
+    if (closeBtn) {
+        closeBtn.addEventListener('click', () => modal.classList.remove('active'));
+    }
+
+    modal.addEventListener('click', e => {
+        if (e.target === modal) modal.classList.remove('active');
     });
 
-    document.addEventListener('keydown', (e) => {
+    document.addEventListener('keydown', e => {
         if (e.key === 'Escape' && modal.classList.contains('active')) {
             modal.classList.remove('active');
         }
     });
 }
 
+// ─── Init ─────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
     updateLanguage(currentLang);
     setupReviewForm();
     setupReviewModal();
     initScrollAnimations();
-    
-    // Fetch API data without blocking UI listeners
+
     fetchRepairs().catch(e => console.error('Repairs error:', e));
     fetchReviews().catch(e => console.error('Reviews error:', e));
 });
-

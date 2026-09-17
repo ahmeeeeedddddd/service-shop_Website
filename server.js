@@ -48,8 +48,15 @@ const saveRepairs = () => {
 };
 
 // Middleware
-app.use(express.static(path.join(__dirname, 'public'), { extensions: ['html'] }));
+const cors = require('cors');
+app.use(cors());
+
+// Only serve static files when running locally (not on Vercel serverless)
+if (process.env.NODE_ENV !== 'production') {
+    app.use(express.static(path.join(__dirname, 'public'), { extensions: ['html'] }));
+}
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 // Clean Routes
 app.get('/', (req, res) => {

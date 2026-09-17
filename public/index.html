@@ -158,7 +158,7 @@
         <div class="review-modal-content">
             <button class="review-modal-close" id="closeReviewModalBtn" type="button" onclick="document.getElementById('reviewModal').classList.remove('active')">&times;</button>
             <h3 id="addReviewTitle" style="text-align: center; margin-bottom: 25px; color: var(--text-main);">شاركنا رأيك وتجربتك</h3>
-            <form id="reviewForm">
+            <form id="reviewForm" method="post" action="javascript:void(0)" onsubmit="return false;">
                 <div class="review-form-group">
                     <input type="text" id="reviewName" name="name" required placeholder="الاسم الكريم...">
                 </div>
