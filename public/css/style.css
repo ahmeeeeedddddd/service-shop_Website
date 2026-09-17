@@ -517,6 +517,7 @@ section {
 /* --- Feedback --- */
 .feedback-section {
     background: var(--primary-yellow); /* Make this section stand out with brand yellow */
+    padding: 80px 0;
 }
 .feedback-section .section-title h2 { color: var(--text-main); }
 .feedback-section .section-title h2::after { background: var(--primary-red); }
@@ -558,6 +559,74 @@ body.rtl .testimonial::before {
     margin-bottom: 20px;
     line-height: 1.6;
     word-break: break-word;
+}
+
+/* --- Reviews Grid --- */
+.reviews-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 30px;
+    margin-bottom: 20px;
+}
+
+/* --- Review Author (name + date row) --- */
+.review-author {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: auto;
+    padding-top: 15px;
+    border-top: 1px solid rgba(0,0,0,0.06);
+}
+
+.review-name {
+    font-weight: 700;
+    color: var(--primary-red);
+    font-size: 1rem;
+}
+
+.review-date {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+/* --- Review Form (inside modal) --- */
+.review-form-group {
+    margin-bottom: 18px;
+}
+
+.review-form-group input,
+.review-form-group textarea {
+    width: 100%;
+    padding: 14px 18px;
+    border: 2px solid #e0e0e0;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-family: inherit;
+    color: var(--text-main);
+    background: #f9f9f9;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    outline: none;
+    resize: vertical;
+    direction: rtl;
+    text-align: right;
+}
+
+.review-form-group input:focus,
+.review-form-group textarea:focus {
+    border-color: var(--primary-yellow);
+    box-shadow: 0 0 0 3px var(--primary-yellow-glow);
+    background: #fff;
+}
+
+.review-status {
+    text-align: center;
+    margin-top: 14px;
+    font-size: 1rem;
+    font-weight: 600;
+    min-height: 24px;
 }
 
 /* --- Footer --- */
