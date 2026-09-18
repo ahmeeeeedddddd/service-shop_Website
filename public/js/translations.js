@@ -58,7 +58,7 @@ const translations = {
         visaDesc: "قسطنالك صيانة عربيتك بالتقسيط مع أي بنك في مصر...صلح عربيتك ومتشلش هم الدفع",
         repairsTitle: "إصلاحاتنا",
         seeAllRepairs: "رؤية جميع الإصلاحات",
-        insuranceTitle: "التعامل مع شركات التأمين",
+        insuranceTitle: "بنتعامل مع كل شركات التأمين",
         servicesTitle: "ماذا نقدم",
         srvQuick: "صيانه سريعه وانت في مكانك",
         srvGear: "تغيير زيت الفتيس",
